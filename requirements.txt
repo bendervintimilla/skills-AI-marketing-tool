@@ -24,7 +24,7 @@ google-ads>=22.0.0,<25.0.0        # Google Ads API client
 google-auth-oauthlib>=1.2.0,<2.0.0  # OAuth2 refresh token flow (--auth)
 
 # HTML parsing (used by fetch_landing_portfolio.py)
-beautifulsoup4>=4.12.0,<5.0.0     # Landing page structural analysis
+beautifulsoup4>=4.14.3,<5.0.0     # Landing page structural analysis
 
 # Optional alternative providers (not installed by default):
 # openai>=1.75.0,<2.0.0           # OpenAI gpt-image-1
