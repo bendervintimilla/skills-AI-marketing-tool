@@ -21,7 +21,7 @@ google-genai>=1.16.0,<2.0.0       # Gemini 3.x + Imagen 4 family
 
 # Google Ads API (used by fetch_google_ads.py)
 google-ads>=22.0.0,<25.0.0        # Google Ads API client
-google-auth-oauthlib>=1.2.0,<2.0.0  # OAuth2 refresh token flow (--auth)
+google-auth-oauthlib>=1.3.1,<2.0.0  # OAuth2 refresh token flow (--auth)
 
 # HTML parsing (used by fetch_landing_portfolio.py)
 beautifulsoup4>=4.12.0,<5.0.0     # Landing page structural analysis
