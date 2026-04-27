@@ -1,7 +1,7 @@
 ---
 name: ads-landing
-description: "Landing page quality assessment for paid advertising campaigns. Evaluates message match, page speed, mobile experience, trust signals, form optimization, and conversion rate potential. Use when user says landing page, post-click experience, landing page audit, conversion rate, or landing page optimization."
-user-invokable: false
+description: "Landing page quality assessment for paid advertising and organic social. Evaluates page speed, mobile experience, conversion CTAs (WhatsApp, reservations), trust signals, LocalBusiness schema, Meta Pixel, and the Instagram-to-landing-page funnel. Use when user says landing page, website audit, post-click experience, conversion rate, or page analysis."
+user-invokable: true
 ---
 
 <!-- Updated: 2026-04-13 | v1.5 -->

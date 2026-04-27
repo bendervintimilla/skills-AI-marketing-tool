@@ -1,133 +1,148 @@
 # Image Generation Providers
 
-<!-- Updated: 2026-04-01 -->
-<!-- Used by: ads-generate, ads-photoshoot, visual-designer agent -->
+<!-- Updated: 2026-04-22 -->
+<!-- Used by: ads-generate, ads-photoshoot, ads-create, ads-dna, visual-designer agent -->
 
-## Default Provider: banana-claude
+## Default Provider: Google Gemini / Imagen 4
 
-banana-claude (v1.4.1) is the default image generation provider. It acts as a Creative Director
-layer on top of Google Gemini, providing 5-component prompt engineering, 9 domain modes,
-brand presets, cost tracking, and post-processing.
+All image generation runs through `scripts/generate_image.py`, which uses
+the `google-genai` SDK to hit either the Gemini multimodal image endpoint
+or the Imagen 4 dedicated text-to-image endpoint.
 
 ### Prerequisites
-- banana-claude installed (`/banana setup` to verify)
-- nanobanana-mcp configured with GOOGLE_AI_API_KEY
-- No additional pip packages needed (banana uses stdlib only)
 
-### MCP Tools (Primary Method)
+- `google-genai>=1.16.0` installed (comes with the skill's requirements.txt)
+- `GOOGLE_API_KEY` environment variable set
+- Get a key at https://aistudio.google.com/app/apikey
 
-| Tool | Purpose | Key Parameters |
-|------|---------|----------------|
-| `set_aspect_ratio` | Configure ratio for next generation | ratio: "16:9", "1:1", "9:16", etc. |
-| `set_model` | Switch Gemini model | model: "gemini-3.1-flash-image-preview" (default) |
-| `gemini_generate_image` | Text-to-image generation | prompt: (string) |
-| `gemini_edit_image` | Modify existing image | imagePath, prompt |
-| `get_image_history` | Review session generations | (none) |
+### Quality Presets
 
-### Domain Modes for Ad Creative
+The `--quality` flag maps a short name to a current production model ID:
 
-| Mode | Use For | Ad Type |
-|------|---------|---------|
-| Product | E-commerce packshots, product ads | Shopping, PMax, Meta catalog |
-| Editorial | Brand awareness, lifestyle campaigns | Meta Feed, YouTube, LinkedIn |
-| Cinema | Dramatic storytelling, video thumbnails | YouTube, TikTok, Demand Gen |
-| Portrait | People-centric ads, testimonials | Meta, LinkedIn, Google Display |
-| UI/Web | App install ads, SaaS screenshots | Google UAC, Meta app install |
-| Logo | Brand identity, favicon generation | All platforms (identity assets) |
-| Landscape | Environment, travel, real estate | Google Display, YouTube |
-| Infographic | Data-driven ads, comparison charts | LinkedIn, Google Display |
-| Abstract | Background textures, patterns | All (supporting assets) |
+| Preset | Model ID | Cost / 1K img | Cost / 2K img | Best for |
+|--------|----------|--------------:|--------------:|----------|
+| `pro` **(default)** | `gemini-3-pro-image-preview` | $0.134 | $0.134 | Hero creatives, key visuals, professional asset production. Thinking mode, up to 6 reference images for objects / 5 for characters. Advanced text rendering. |
+| `high` | `imagen-4.0-ultra-generate-001` | $0.06 | $0.06 | Photorealism, product shots, legible text-in-image (logos/CTAs). GA (stable). Text-to-image only. |
+| `flash` | `gemini-3.1-flash-image-preview` | $0.067 | $0.101 | Multi-reference editing (up to 14 images), new aspect ratios (1:4, 4:1, 1:8, 8:1), Google Search grounding, controllable thinking. |
+| `fast` | `gemini-2.5-flash-image` | $0.039 | N/A | High-volume iteration, A/B variants, simple multi-turn edits. GA (stable). |
 
-### 5-Component Prompt Formula
+Default can be overridden with the `ADS_IMAGE_QUALITY` env var.
 
-Banana constructs optimized prompts using:
-1. [SUBJECT]: Physical details, appearance, material
-2. [ACTION]: What it's doing, pose, state
-3. [LOCATION/CONTEXT]: Where, when, atmosphere
-4. [COMPOSITION]: Camera angle, framing, perspective
-5. [STYLE]: Camera/lens specs, lighting, brand voice mapped attributes
+### Usage Examples
 
-Visual-designer agent builds these components from campaign brief + brand profile.
+```bash
+# Hero creative (default — pro)
+python generate_image.py "Executive product shot, SaaS dashboard on a modern desk, soft window light" \
+    --ratio 16:9 --output hero.png
 
-### Pricing (Gemini via banana)
+# Photoreal product shot (Imagen 4 Ultra)
+python generate_image.py "Skincare bottle, white background, studio lighting, sharp focus" \
+    --ratio 1:1 --quality high --output product.png
 
-| Resolution | Cost/Image | Use Case |
-|------------|-----------|----------|
-| 512px | $0.020 | Quick drafts, concepts |
-| 1K | $0.039 | Standard web assets |
-| 2K (recommended) | $0.078 | Quality ad creatives |
-| 4K | $0.156 | Print, hero images |
-| Batch API | 50% off | Bulk campaign generation |
+# Edit using a brand reference (Gemini 3.1 Flash Image)
+python generate_image.py "Product on beach at sunset, maintain brand aesthetic" \
+    --ratio 9:16 --quality flash --reference-image ./brand-screenshots/homepage.png
 
-### Aspect Ratios (14 supported)
+# Volume batch of variants (Gemini 2.5 Flash Image)
+python generate_image.py --batch variants.json --output-dir ./ad-assets/ \
+    --quality fast
+```
+
+### Aspect Ratios
+
+`generate_image.py` accepts these shorthand ratios and maps to the closest
+supported ratio per model:
 
 | Ratio | Dimensions | Platform Use |
 |-------|-----------|-------------|
-| 1:1 | 1080x1080 | Meta Feed, LinkedIn, Carousel |
-| 4:5 | 1080x1350 | Meta Feed (preferred), Instagram |
-| 9:16 | 1080x1920 | TikTok, Reels, Shorts, Stories |
-| 16:9 | 1920x1080 | YouTube, Google Display, LinkedIn |
-| 3:2 | 1200x800 | DSLR standard, photo prints |
-| 2:3 | 800x1200 | Pinterest, posters |
-| 21:9 | Cinematic | Ultra-wide banners |
-| 4:1 | 1200x300 | Website banners |
-| 1:4 | Vertical banner | Mobile banners |
+| 1:1 | 1080×1080 | Meta Feed, LinkedIn, Carousel |
+| 4:5 | 1080×1350 | Meta Feed (preferred), Instagram |
+| 9:16 | 1080×1920 | TikTok, Reels, Shorts, Stories |
+| 16:9 | 1920×1080 | YouTube, Google Display, LinkedIn |
+| 4:3 | 1200×900 | Display standard |
+| 3:4 | 900×1200 | Pinterest, portrait ads |
+| 1.91:1 | 1200×628 | Google PMax / LinkedIn landscape (generated 16:9, crop in post) |
+| 4:1 | 1200×300 | Website banners |
+| 21:9 | 2520×1080 | Ultra-wide hero |
 
-Note: Gemini does not natively support 1.91:1. Use 16:9 and crop to 1200x628 for Google PMax/LinkedIn.
+Note: Imagen 4 family natively supports 1:1, 3:4, 4:3, 9:16, 16:9. Other
+ratios are mapped to the closest and cropped client-side if needed.
+Gemini 3.1 Flash Image also natively supports 1:4, 4:1, 1:8, 8:1.
 
-### Brand Presets
+### When to Use Which Preset
 
-banana supports brand presets stored at `~/.banana/presets/NAME.json`.
-The ads-generate skill auto-creates a preset from brand-profile.json before generation.
+| Situation | Preset | Why |
+|-----------|--------|-----|
+| Client-facing hero image | `pro` | Highest reasoning, composition, text rendering |
+| Product packshots (e-commerce) | `high` | Imagen 4 Ultra is best-in-class for photoreal products |
+| "Change the background of THIS image" | `flash` | Only Gemini 3.x accepts reference images + edits |
+| 50 banner variants for A/B testing | `fast` | 3–4x cheaper per image |
+| Logo / icon generation | `pro` or `high` | Advanced text rendering matters for brand marks |
+| Character consistency across a series | `pro` | Up to 5 character references with identity preservation |
+| Multi-reference composition (logo + product + setting) | `flash` | Handles up to 14 reference images |
 
-Preset schema:
-- colors: array of hex values from brand DNA
-- style: visual style description from brand aesthetic
-- mood: mood keywords from brand voice
-- default_ratio: "16:9" (or platform-specific)
-- default_resolution: "2K"
+### Watermarking
 
-### Cost Tracking
+All Google-generated images include invisible **SynthID** watermarks that
+mark them as AI-generated at a bit level. This matters for ad platforms
+with disclosure requirements (Meta, Google, TikTok) — keep this in mind
+when claiming imagery is human-created.
 
-banana logs all generations to `~/.banana/costs.json`.
-ads-generate reads this after generation and includes cost summary in generation-manifest.json.
-
----
-
-## Fallback Providers
-
-If banana is not installed, these providers can be used directly via generate_image.py (deprecated).
-
-### OpenAI (gpt-image-1)
-- Env: `OPENAI_API_KEY`
-- Price: ~$0.040/image (1024x1024), ~$0.060 (1024x1536)
-- Package: `openai>=1.75.0`
-
-### Stability AI (stable-diffusion-3.5-large)
-- Env: `STABILITY_API_KEY`
-- Price: ~$0.065/image flat
-- Package: `stability-sdk>=0.8.4`
-
-### Replicate (FLUX.1 Pro)
-- Env: `REPLICATE_API_TOKEN`
-- Price: ~$0.055/image
-- Package: `replicate>=1.0.4`
-
----
-
-## Error Reference
+### Error Reference
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| banana MCP not found | nanobanana-mcp not configured | Run `/banana setup` |
-| IMAGE_SAFETY | Safety filter triggered | Rephrase; use abstraction or artistic framing |
-| 429 Too Many Requests | Rate limit | banana auto-retries with exponential backoff |
-| FAILED_PRECONDITION | Billing not enabled | Enable billing in Google AI Studio |
+| `GOOGLE_API_KEY not set` | Env var missing | `export GOOGLE_API_KEY="..."` |
+| `IMAGE_SAFETY` | Safety filter triggered | Rephrase prompt; abstract or artistic framing |
+| `429` / `RESOURCE_EXHAUSTED` | Rate limit | Script auto-retries with exponential backoff |
+| `FAILED_PRECONDITION` | Billing not enabled | Enable billing in Google AI Studio |
+| `NOT_FOUND` on model | Preview model rolled back | Use `--quality high` (Imagen 4 Ultra is GA) |
+| `Imagen does not support reference images` | Used `--reference-image` with `--quality high` | Switch to `--quality flash` or `pro` |
 
-### Rate Limits (Gemini via banana)
+### Rate Limits (Gemini / Imagen, Google AI Studio)
 
 | Tier | RPM | Daily Images |
-|------|-----|-------------|
-| Free | 5-15 | 20-500 |
+|------|-----|--------------|
+| Free | 5–15 | 20–500 |
 | Tier 1 (<$250 spend) | 150 | 1,500 |
-| Tier 2 (>$250 spend) | 1,000+ | Unlimited |
+| Tier 2 (>$250 spend) | 1,000+ | Higher / negotiable |
+
+---
+
+## Optional Alternative Providers
+
+These are supported by `generate_image.py` but are **not installed by default**.
+Install the provider's package separately and set its API key.
+
+### OpenAI (gpt-image-1)
+- Env: `OPENAI_API_KEY`, `ADS_IMAGE_PROVIDER=openai`
+- Price: ~$0.040/image (1024×1024), ~$0.060 (1024×1536)
+- Package: `pip install 'openai>=1.75.0'`
+
+### Stability AI (stable-diffusion-3.5-large)
+- Env: `STABILITY_API_KEY`, `ADS_IMAGE_PROVIDER=stability`
+- Price: ~$0.065/image flat
+- Package: `pip install 'stability-sdk>=0.8.4'`
+
+### Replicate (FLUX.1 Pro)
+- Env: `REPLICATE_API_TOKEN`, `ADS_IMAGE_PROVIDER=replicate`
+- Price: ~$0.055/image
+- Package: `pip install 'replicate>=1.0.4'`
+
+---
+
+## Script Interface Summary
+
+```
+python generate_image.py [PROMPT] [--ratio R | --size WxH]
+                         [--quality {pro,high,flash,fast}]
+                         [--model MODEL_ID]
+                         [--reference-image FILE]
+                         [--output FILE | --batch FILE --output-dir DIR]
+                         [--provider {gemini,openai,stability,replicate}]
+                         [--json]
+```
+
+`--model` always takes precedence over `--quality`. Use `--model` only when
+you need a specific model ID not in the preset list (e.g.
+`imagen-4.0-generate-001` for the standard Imagen 4 tier).

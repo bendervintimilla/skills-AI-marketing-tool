@@ -1,41 +1,60 @@
 ---
 name: ads-generate
-description: "AI image generation for paid ad creatives. Reads campaign-brief.md and brand-profile.json to produce platform-sized ad images using banana-claude. Requires banana-claude (v1.4.1+) with nanobanana-mcp configured. Triggers on: generate ads, create images, make ad creatives, generate visuals, create ad images, generate campaign images, make the images, generate from brief."
+description: "AI image generation for paid ad creatives. Reads campaign-brief.md and brand-profile.json to produce platform-sized ad images using Google Gemini 3 Pro Image / Imagen 4 via the google-genai SDK. Triggers on: generate ads, create images, make ad creatives, generate visuals, create ad images, generate campaign images, make the images, generate from brief."
 user-invokable: false
 ---
 
 # Ads Generate: AI Ad Image Generator
 
-Generates platform-sized ad creative images from your campaign brief and brand
-profile. Uses banana-claude as the image generation provider.
+Generates platform-sized ad creative images from your campaign brief and
+brand profile. Uses Google Gemini / Imagen 4 via `scripts/generate_image.py`.
 
 ## Quick Reference
 
 | Command | What it does |
 |---------|-------------|
-| `/ads generate` | Generate all images from campaign-brief.md |
+| `/ads generate` | Generate all images from campaign-brief.md (default quality: pro) |
 | `/ads generate --platform meta` | Generate Meta assets only |
+| `/ads generate --quality high` | Force Imagen 4 Ultra for photoreal product shots |
+| `/ads generate --quality fast` | High-volume variants with Gemini 2.5 Flash Image |
 | `/ads generate --prompt "text" --ratio 9:16` | Standalone generation without brief |
 
 ## Environment Setup
 
 **Required before running:**
 
-- Requires banana-claude (v1.4.1+) with nanobanana-mcp configured
-- Run `/banana setup` to configure API key and MCP
-- Fallback: if banana is not available, use `scripts/generate_image.py` (deprecated)
+- `GOOGLE_API_KEY` environment variable set
+  (get a key at https://aistudio.google.com/app/apikey)
+- `google-genai>=1.16.0` installed (included in the skill's `requirements.txt`)
 
-If banana-claude is not installed, this skill will display setup instructions
+If `GOOGLE_API_KEY` is not set, this skill will display setup instructions
 and stop. It will never fail silently.
 
-If banana-claude is unavailable, alternatives include: OpenAI gpt-image-1 ($0.040/image), Stability SD 3.5 ($0.065), or Replicate FLUX.1 Pro ($0.055). Configure via ADS_IMAGE_PROVIDER env var.
+Optional alternative providers (OpenAI, Stability AI, Replicate) are documented
+in `~/.claude/skills/ads/references/image-providers.md`. Switch via
+`ADS_IMAGE_PROVIDER` env var.
+
+## Quality Presets
+
+The `--quality` flag controls which Google model is used:
+
+| Preset | Model | Cost/img | Use |
+|--------|-------|---------:|-----|
+| `pro` **(default)** | Gemini 3 Pro Image Preview | $0.134 | Hero creatives, key visuals |
+| `high` | Imagen 4 Ultra | $0.06 | Photoreal product shots |
+| `flash` | Gemini 3.1 Flash Image Preview | $0.067 | Multi-reference editing |
+| `fast` | Gemini 2.5 Flash Image | $0.039 | Volume / A-B variants |
 
 ## Process
 
-### Step 1: Verify banana-claude
+### Step 1: Verify Prerequisites
 
-Verify banana-claude is installed (run `/banana setup` to check). If not installed,
-display setup instructions and exit.
+Check that `GOOGLE_API_KEY` is set. If not, display setup instructions:
+
+```
+export GOOGLE_API_KEY="your-key"
+# Get a key at https://aistudio.google.com/app/apikey
+```
 
 ### Step 2: Locate Source Files
 
@@ -53,16 +72,17 @@ generation job list.
 Ask the user:
 1. Generation prompt (what should the image show?)
 2. Target platform (to set correct dimensions)
-3. Output filename (optional)
+3. Quality preset (pro/high/flash/fast, default: pro)
+4. Output filename (optional)
 
 Then skip to Step 5.
 
 ### Step 3: Read Provider Config
 
 Load `~/.claude/skills/ads/references/image-providers.md` to confirm:
-- Active provider pricing (show user the cost estimate)
+- Current model pricing (show user the cost estimate)
 - Rate limits for current tier
-- Batch API availability
+- Aspect ratio support per model
 
 ### Step 4: Read Platform Specs
 
@@ -74,29 +94,39 @@ For each platform in the campaign brief, load the relevant spec reference:
 - `~/.claude/skills/ads/references/youtube-creative-specs.md`
 - `~/.claude/skills/ads/references/microsoft-creative-specs.md`
 
-### Step 5: Prepare banana Configuration
+### Step 5: Select Quality Per Asset
 
-Create banana brand preset from brand-profile.json if one does not already exist
-at `~/.banana/presets/{brand-slug}.json`.
+Map each brief entry to the right `--quality` preset based on its purpose:
 
-Select banana domain mode based on campaign brief content:
-- **Product**: e-commerce, packshots
-- **Editorial**: brand awareness, lifestyle
-- **Cinema**: video thumbnails, dramatic
-- **UI/Web**: app install, SaaS
-- **Portrait**: testimonials, people
+| Asset type | Preset | Why |
+|------------|--------|-----|
+| Hero / key visual | `pro` | Maximum reasoning + text rendering |
+| Product packshot | `high` | Imagen 4 Ultra is best-in-class for photoreal products |
+| Brand-reference edit | `flash` | Only Gemini 3.x accepts reference images |
+| Many variants of same concept | `fast` | 3–4× cheaper per image |
 
 ### Step 6: Spawn Visual Designer Agent
 
 Spawn the `visual-designer` agent using the Task tool with `context: fork`,
-passing the selected domain mode and preset name.
+passing the selected quality preset and brand profile.
 
 The agent will:
 - Parse the image generation briefs from campaign-brief.md
-- Inject brand colors and mood from brand-profile.json
-- Use banana-claude with the configured domain mode for each asset
+- Inject brand colors and mood from brand-profile.json into each prompt
+- Invoke `python ~/.claude/skills/ads/scripts/generate_image.py` per asset
 - Save to `./ad-assets/[platform]/[concept]/` directory structure
 - Write `generation-manifest.json`
+
+Example call the agent runs:
+
+```bash
+python ~/.claude/skills/ads/scripts/generate_image.py \
+    "Minimalist SaaS dashboard screenshot, dark UI with teal accents, clean data viz" \
+    --ratio 16:9 \
+    --quality pro \
+    --output ./ad-assets/linkedin/concept-1/hero-1920x1080.png \
+    --json
+```
 
 ### Step 7: Validate with Format Adapter
 
@@ -117,8 +147,9 @@ Quality Gate Rubric:
 
 ### Step 9: Aggregate Costs
 
-Read banana cost data from `~/.banana/costs.json` and include total creative spend
-in generation-manifest.json.
+Sum costs from each generation's JSON output (script emits `quality` and
+`model` per image). Compute total using the pricing table in
+`image-providers.md` and include in `generation-manifest.json`.
 
 ### Step 10: Report Results
 
@@ -127,13 +158,13 @@ Present a summary:
 Generation complete:
 
   Generated assets:
-    ✓ ./ad-assets/meta/concept-1/feed-1080x1350.png
-    ✓ ./ad-assets/tiktok/concept-1/vertical-1080x1920.png
-    ✗ ./ad-assets/google/concept-1/landscape-1200x628.png [error reason]
+    ✓ ./ad-assets/meta/concept-1/feed-1080x1350.png       [quality: pro, $0.134]
+    ✓ ./ad-assets/tiktok/concept-1/vertical-1080x1920.png [quality: fast, $0.039]
+    ✗ ./ad-assets/google/concept-1/landscape-1200x628.png [error: SAFETY]
 
   Format validation: See format-report.md
 
-  Cost: $[N] total creative spend (from ~/.banana/costs.json)
+  Cost: $[N] total creative spend (X images)
 
   Next steps:
     1. Review assets in ./ad-assets/
@@ -145,8 +176,9 @@ Generation complete:
 
 Before generating, estimate and show the cost:
 - Count the number of image briefs in campaign-brief.md
-- Show estimated cost based on banana pricing tiers
-- If >$1.00, ask for confirmation before proceeding
+- Multiply by the per-image cost of the chosen preset
+- If total >$1.00, ask for confirmation before proceeding
+- Suggest dropping non-hero assets to `--quality fast` to reduce spend
 
 ## Standalone Mode (No campaign-brief.md)
 
@@ -163,10 +195,15 @@ Platform target → dimensions used:
   youtube-short → 1080×1920 (9:16)
 ```
 
-Use `/banana generate` directly with the specified prompt and aspect ratio.
+Invoke the script directly:
+
+```bash
+python ~/.claude/skills/ads/scripts/generate_image.py \
+    "<prompt>" --ratio <ratio> --quality <preset> --output <file>
+```
 
 ## Reference Files
 
-- `~/.claude/skills/ads/references/image-providers.md`: provider config, pricing, limits
+- `~/.claude/skills/ads/references/image-providers.md`: model config, pricing, limits, presets
 - `~/.claude/skills/ads/references/[platform]-creative-specs.md`: per-platform specs
 - `~/.claude/skills/ads/references/brand-dna-template.md`: brand injection schema

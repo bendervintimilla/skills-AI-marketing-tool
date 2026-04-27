@@ -59,8 +59,8 @@ commentary: Always inform the user when working without audit data. The concepts
    **Primary Message:** The single core message (1 sentence)
    **Tone:** Voice axis reading from brand-profile.json (e.g. "formal 7/10, bold 8/10")
    **Copy Framework:** [AIDA | PAS | BAB | 4P | FAB | Star-Story-Solution] (selected per step 5)
-   **Visual Direction A (Photography):** [banana Product or Portrait mode] (2-3 sentences)
-   **Visual Direction B (Illustration):** [banana UI/Web or Abstract mode] (2-3 sentences)
+   **Visual Direction A (Photography):** Photoreal product/people shot — use `--quality high` (Imagen 4 Ultra) (2-3 sentences)
+   **Visual Direction B (Illustration):** Graphic/UI/abstract — use `--quality pro` (Gemini 3 Pro Image) (2-3 sentences)
    **Target Platforms:** Which platforms this concept suits and why
    **CTA:** Primary call to action text
    **Addresses:** [Audit finding this targets, or "general brand awareness" if no audit]
@@ -76,14 +76,14 @@ commentary: Always inform the user when working without audit data. The concepts
    - Include the selected framework name in campaign-brief.md under each concept
 
 6. **Provide 2 visual direction variants** for each concept:
-   - Direction A: photography-based (banana Product or Portrait mode)
-   - Direction B: illustration/graphic-based (banana UI/Web or Abstract mode)
-   - Specify the banana domain mode for each direction
+   - Direction A: photography-based → recommend `--quality high` (Imagen 4 Ultra) for photoreal product/people shots
+   - Direction B: illustration/graphic/UI-based → recommend `--quality pro` (Gemini 3 Pro Image) for scene composition and text rendering
+   - Specify the recommended quality preset per direction
 
 7. **E-Commerce Playbook** (when business type is e-commerce):
    - Read `skills/ads-plan/assets/ecommerce-creative.md`
    - Select creative playbook based on campaign goal: Product Launch, Sale/Promotion, Seasonal, Retargeting, Brand Awareness
-   - Include playbook-specific asset requirements and banana domain modes in briefs
+   - Include playbook-specific asset requirements and recommended quality presets in briefs
 
 8. **Write the strategic section** to `campaign-brief.md` using this exact structure:
 
@@ -114,7 +114,7 @@ commentary: Always inform the user when working without audit data. The concepts
 **Prompt:** [Exact generation prompt incorporating brand colors, style, subject, composition]
 **Dimensions:** [e.g. 1080x1920 for TikTok, 1080x1350 for Meta Feed]
 **Aspect Ratio:** [e.g. 4:5, 9:16, 1:1, 16:9]
-**Banana domain mode:** [Product | Portrait | UI/Web | Abstract | Landscape]
+**Quality preset:** [pro | high | flash | fast] (see ~/.claude/skills/ads/references/image-providers.md)
 **Copy Framework:** [selected framework name]
 **Safe zone notes:** [Any composition constraints for this placement]
 
@@ -140,7 +140,7 @@ The `## Image Generation Briefs` section is parsed programmatically by the visua
 **Prompt:** [prompt text here]
 **Dimensions:** [WxH, e.g. 1080x1920]
 **Aspect Ratio:** [e.g. 4:5, 9:16, 1:1, 16:9]
-**Banana domain mode:** [Product | Portrait | UI/Web | Abstract | Landscape]
+**Quality preset:** [pro | high | flash | fast] (see ~/.claude/skills/ads/references/image-providers.md)
 **Safe zone notes:** [text or "None"]
 ```
 

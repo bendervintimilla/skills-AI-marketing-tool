@@ -89,15 +89,14 @@ function Main {
         }
         $ErrorActionPreference = "Stop"
 
-        # Check for banana-claude (image generation provider)
+        # Verify image generation provider (Google Gemini / Imagen via google-genai)
         Write-Host ""
-        $BananaPath = Join-Path $env:USERPROFILE ".claude\skills\banana\SKILL.md"
-        if (Test-Path $BananaPath) {
-            Write-Host "  OK banana-claude detected (image generation ready)" -ForegroundColor Green
+        if ($env:GOOGLE_API_KEY) {
+            Write-Host "  OK GOOGLE_API_KEY detected (image generation ready)" -ForegroundColor Green
         } else {
-            Write-Host "  Warning: banana-claude not installed. Image generation requires it." -ForegroundColor Yellow
-            Write-Host "    Install: https://github.com/AgriciDaniel/banana-claude"
-            Write-Host "    Then run: /banana setup (to configure API key)"
+            Write-Host "  Warning: GOOGLE_API_KEY not set. Image generation requires it." -ForegroundColor Yellow
+            Write-Host "    Get a key: https://aistudio.google.com/app/apikey"
+            Write-Host "    Then set: `$env:GOOGLE_API_KEY = `"your-key`""
         }
 
         Write-Host ""

@@ -6,8 +6,8 @@
 ## Overview
 
 This playbook covers 5 core campaign types for e-commerce businesses, each with
-recommended creative assets, platform priorities, banana domain modes, and budget
-guidance. Use alongside `copy-frameworks.md` for ad copy structure.
+recommended creative assets, platform priorities, image-generation quality preset,
+and budget guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 
 ## Product Launch
 
@@ -19,7 +19,7 @@ guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 - Comparison graphic (new product vs. previous version)
 
 **Platforms (by priority):** Meta > Google Shopping > TikTok > YouTube
-**Banana domain mode:** Product
+**Quality preset:** high (Imagen 4 Ultra — photoreal product)
 **Aspect ratios:** 1:1 (Meta feed), 9:16 (Stories, Reels, TikTok), 16:9 (YouTube)
 **Copy framework:** AIDA (cold audience, new product awareness)
 **Budget allocation:** 30 to 40% of total campaign budget
@@ -35,7 +35,7 @@ guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 - Customer testimonial video with savings highlight
 
 **Platforms (by priority):** Meta > Google RSA > Microsoft Shopping > TikTok
-**Banana domain mode:** Editorial
+**Quality preset:** pro (Gemini 3 Pro Image — text rendering for discount overlays)
 **Aspect ratios:** 1:1 (Meta feed), 9:16 (Stories, TikTok), 1.91:1 (Google Display)
 **Copy framework:** PAS (agitate fear of missing the deal, solve with discount)
 **Budget allocation:** 20 to 30% of total campaign budget
@@ -51,7 +51,7 @@ guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 - Social proof overlay (ratings, reviews, bestseller badges)
 
 **Platforms (by priority):** Meta > Google Shopping > YouTube > LinkedIn (B2B gifting)
-**Banana domain mode:** Cinema
+**Quality preset:** pro (Gemini 3 Pro Image — dramatic scene reasoning)
 **Aspect ratios:** 1:1 (Meta feed), 9:16 (Stories, Reels), 16:9 (YouTube), 1.91:1 (Display)
 **Copy framework:** BAB (before: seasonal struggle; after: solved with product)
 **Budget allocation:** 15 to 25% of total campaign budget
@@ -67,7 +67,7 @@ guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 - Cross-sell carousel (complementary products)
 
 **Platforms (by priority):** Meta > Google Display > Microsoft Audience > TikTok
-**Banana domain mode:** Product
+**Quality preset:** fast (Gemini 2.5 Flash Image — volume, retargeting variants)
 **Aspect ratios:** 1:1 (Meta feed), 1.91:1 (Google Display), 9:16 (Stories)
 **Copy framework:** PAS (problem: they left without buying; solution: come back with incentive)
 **Budget allocation:** 10 to 15% of total campaign budget
@@ -83,7 +83,7 @@ guidance. Use alongside `copy-frameworks.md` for ad copy structure.
 - Aspirational lifestyle imagery (product in dream setting)
 
 **Platforms (by priority):** YouTube > Meta > TikTok > LinkedIn
-**Banana domain mode:** Cinema
+**Quality preset:** pro (Gemini 3 Pro Image — cinematic scene composition)
 **Aspect ratios:** 16:9 (YouTube), 1:1 (Meta feed), 9:16 (Reels, TikTok)
 **Copy framework:** Star-Story-Solution (brand as the hero narrative)
 **Budget allocation:** 10 to 15% of total campaign budget

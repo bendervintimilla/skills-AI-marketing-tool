@@ -1,7 +1,7 @@
 ---
 name: ads-creative
-description: "Cross-platform creative quality audit covering ad copy, video, image, and format diversity across all platforms. Detects creative fatigue, evaluates platform-native compliance, and provides production priorities. Use when user says creative audit, ad creative, creative fatigue, ad copy, ad design, or creative review."
-user-invokable: false
+description: "Cross-platform creative quality audit for Instagram, Meta Ads, and other platforms. Detects creative fatigue from Meta snapshot data, evaluates Reels hooks, carousel strategy, format diversity, and Andromeda similarity score risk. Generates content calendar templates. Use when user says creative audit, creativos, ad creative, creative fatigue, ad copy, or content ideas."
+user-invokable: true
 ---
 
 <!-- Updated: 2026-04-13 | v1.5 -->

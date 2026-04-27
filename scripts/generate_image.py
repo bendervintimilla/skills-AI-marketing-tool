@@ -1,34 +1,31 @@
 #!/usr/bin/env python3
 """
-DEPRECATED: Use banana-claude MCP tools instead. This script is a fallback
-for environments where banana-claude is not installed.
+Generate ad creative images using Google Gemini / Imagen 4 (default) or
+alternative providers. Default stack uses google-genai SDK.
 
-Preferred method: Install banana-claude and use `/banana generate` or
-the nanobanana-mcp tools (gemini_generate_image, set_aspect_ratio).
-See: https://github.com/AgriciDaniel/claude-banana
-
-Generate ad creative images using a pluggable image generation API.
-
-Supports Gemini (default), OpenAI, Stability AI, and Replicate.
-Set ADS_IMAGE_PROVIDER env var to choose a provider.
-Set the appropriate API key env var for the chosen provider.
+Quality presets (--quality flag):
+    pro    Gemini 3 Pro Image Preview         $0.134/img  Premium hero creatives
+    high   Imagen 4 Ultra                     $0.06/img   Photorealistic, text-in-image
+    flash  Gemini 3.1 Flash Image Preview     $0.067/img  Multi-ref editing (up to 14)
+    fast   Gemini 2.5 Flash Image             $0.039/img  High-volume iteration
 
 Usage:
-    python generate_image.py "prompt text" --ratio 9:16 --output ad.png
-    python generate_image.py "prompt text" --ratio 16:9 --provider gemini --json
-    python generate_image.py "prompt text" --size 1200x628 --output landscape.png
+    python generate_image.py "prompt" --ratio 16:9 --quality pro --output ad.png
+    python generate_image.py "prompt" --ratio 1:1 --quality high
+    python generate_image.py "prompt" --ratio 9:16 --quality flash --reference-image brand.png
+    python generate_image.py "prompt" --size 1200x628 --quality fast
     python generate_image.py --batch prompts.json --output-dir ./ad-assets/
-    python generate_image.py --model gemini-3.1-flash-image-preview "prompt" --ratio 1:1
-    python generate_image.py "prompt" --ratio 4:5 --reference-image ./brand-screenshots/homepage_desktop.png
+    python generate_image.py --model imagen-4.0-generate-001 "prompt"  # explicit override
 
 Environment variables:
-    ADS_IMAGE_PROVIDER   Provider to use: gemini (default), openai, stability, replicate
-    GOOGLE_API_KEY       Required for gemini provider
+    GOOGLE_API_KEY       Required for Gemini/Imagen (default provider)
+    ADS_IMAGE_PROVIDER   Override provider: gemini (default), openai, stability, replicate
+    ADS_IMAGE_QUALITY    Default quality preset when --quality is not set (default: pro)
     OPENAI_API_KEY       Required for openai provider
     STABILITY_API_KEY    Required for stability provider
     REPLICATE_API_TOKEN  Required for replicate provider
 
-See ads/references/image-providers.md for pricing and capability details.
+See ads/references/image-providers.md for full pricing and capability details.
 """
 
 import argparse
@@ -69,10 +66,25 @@ GEMINI_RATIO_MAP = {
 }
 
 DEFAULT_PROVIDER = "gemini"
-DEFAULT_MODEL_GEMINI = "gemini-2.5-flash-image"
+DEFAULT_QUALITY = "pro"  # maps to QUALITY_PRESETS below
+
+# Quality presets → exact model IDs (Google AI Studio, 2026-04)
+QUALITY_PRESETS = {
+    "pro":   "gemini-3-pro-image-preview",       # $0.134/img, premium
+    "high":  "imagen-4.0-ultra-generate-001",    # $0.06/img,  photorealism
+    "flash": "gemini-3.1-flash-image-preview",   # $0.067/img, multi-ref editing
+    "fast":  "gemini-2.5-flash-image",           # $0.039/img, volume
+}
+
+DEFAULT_MODEL_GEMINI = QUALITY_PRESETS[DEFAULT_QUALITY]  # gemini-3-pro-image-preview
 DEFAULT_MODEL_OPENAI = "gpt-image-1"
 DEFAULT_MODEL_STABILITY = "stable-diffusion-3.5-large"
 DEFAULT_MODEL_REPLICATE = "black-forest-labs/flux-1.1-pro"
+
+
+def _is_imagen_model(model: str) -> bool:
+    """Imagen 4 family uses a different API endpoint than Gemini multimodal models."""
+    return model.startswith("imagen-")
 
 MAX_RETRIES = 4
 RETRY_BACKOFF = [1, 2, 4, 8]  # seconds
@@ -178,8 +190,8 @@ def generate_gemini(prompt: str, width: int, height: int, api_key: str, model: s
     Args:
         reference_image_path: Optional path to a brand screenshot for style-guided
             generation. When provided, the image is passed as a visual style reference
-            alongside the text prompt. Best used with gemini-3.1-flash-image-preview
-            (Nano Banana 2) which has enhanced style-transfer capabilities.
+            alongside the text prompt. Best used with gemini-3.1-flash-image-preview,
+            which accepts up to 14 reference images and supports multi-turn editing.
     """
     try:
         from google import genai
@@ -234,6 +246,71 @@ def generate_gemini(prompt: str, width: int, height: int, api_key: str, model: s
                 if hasattr(part, "inline_data") and part.inline_data:
                     return part.inline_data.data  # already bytes in google-genai >= 1.16.0
             raise RuntimeError("No image data in Gemini response")
+
+        except Exception as e:
+            err_str = _sanitize_error(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                if attempt < MAX_RETRIES - 1:
+                    wait = RETRY_BACKOFF[attempt]
+                    print(f"Rate limit hit, retrying in {wait}s...", file=sys.stderr)
+                    time.sleep(wait)
+                    continue
+            raise
+
+
+def generate_imagen(prompt: str, width: int, height: int, api_key: str, model: str) -> bytes:
+    """Generate image using Imagen 4 family via google-genai (dedicated text-to-image endpoint).
+
+    Imagen 4 (standard / ultra / fast) does NOT support image editing or
+    reference images — it is a pure text-to-image model. For reference-guided
+    generation use a Gemini 3.x Flash Image model instead.
+    """
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        print(
+            "Error: google-genai package required.\n"
+            "Install with: pip install google-genai>=1.16.0",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Map requested dimensions to Imagen-supported aspect ratio
+    ratio_key = None
+    for k, (w, h) in ASPECT_RATIOS.items():
+        if w == width and h == height:
+            ratio_key = k
+            break
+    # Imagen 4 supports: 1:1, 3:4, 4:3, 9:16, 16:9
+    imagen_ratio_map = {
+        "1:1":    "1:1",
+        "9:16":   "9:16",
+        "16:9":   "16:9",
+        "4:5":    "3:4",   # closest portrait
+        "4:3":    "4:3",
+        "3:4":    "3:4",
+        "1.91:1": "16:9",
+        "4:1":    "16:9",
+        "21:9":   "16:9",
+    }
+    imagen_ratio = imagen_ratio_map.get(ratio_key, "1:1") if ratio_key else "1:1"
+
+    client = genai.Client(api_key=api_key)
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = client.models.generate_images(
+                model=model,
+                prompt=prompt,
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    aspect_ratio=imagen_ratio,
+                ),
+            )
+            if not response.generated_images:
+                raise RuntimeError("No image data in Imagen response")
+            return response.generated_images[0].image.image_bytes
 
         except Exception as e:
             err_str = _sanitize_error(e)
@@ -364,27 +441,22 @@ def generate_image(
     width, height = _dims_from_ratio(ratio)
 
     if provider == "gemini":
-        # Auto-upgrade to Nano Banana 2 (gemini-3.1-flash-image-preview) for
-        # reference-guided generation, as it has better visual style-transfer capability
-        if not model and reference_image_path and os.path.exists(reference_image_path):
-            preview_model = "gemini-3.1-flash-image-preview"
-            try:
-                image_bytes = generate_gemini(prompt, width, height, api_key, preview_model, reference_image_path)
-                model = preview_model
-            except Exception as preview_err:
-                err_str = _sanitize_error(preview_err)
-                if any(code in err_str for code in ("404", "NOT_FOUND", "invalid_argument", "not found")):
-                    print(
-                        f"Warning: {preview_model} unavailable ({err_str[:80]}). "
-                        f"Falling back to {DEFAULT_MODEL_GEMINI} (text-only, no style reference).",
-                        file=sys.stderr,
-                    )
-                    model = DEFAULT_MODEL_GEMINI
-                    image_bytes = generate_gemini(prompt, width, height, api_key, model, None)
-                else:
-                    raise  # rate limit, safety filter, auth errors: re-raise as normal
+        # When a reference image is supplied but no model is explicitly chosen,
+        # force a Gemini multimodal model (Imagen does not accept references).
+        if reference_image_path and os.path.exists(reference_image_path) and not model:
+            model = "gemini-3.1-flash-image-preview"
+
+        model = model or DEFAULT_MODEL_GEMINI
+
+        if _is_imagen_model(model):
+            if reference_image_path:
+                print(
+                    f"Warning: {model} (Imagen family) does not support reference images. "
+                    f"Ignoring --reference-image. Use --quality flash or pro for reference-guided generation.",
+                    file=sys.stderr,
+                )
+            image_bytes = generate_imagen(prompt, width, height, api_key, model)
         else:
-            model = model or DEFAULT_MODEL_GEMINI
             image_bytes = generate_gemini(prompt, width, height, api_key, model, reference_image_path)
     elif provider == "openai":
         model = model or DEFAULT_MODEL_OPENAI
@@ -523,9 +595,23 @@ Set ADS_IMAGE_PROVIDER to switch providers: gemini (default), openai, stability,
         help="Image provider: gemini (default), openai, stability, replicate. Overrides ADS_IMAGE_PROVIDER env var.",
     )
     parser.add_argument(
+        "--quality", "-q",
+        choices=list(QUALITY_PRESETS.keys()),
+        default=None,
+        help=(
+            "Quality preset (Gemini provider only). "
+            "pro=Gemini 3 Pro Image ($0.134), "
+            "high=Imagen 4 Ultra ($0.06), "
+            "flash=Gemini 3.1 Flash Image ($0.067), "
+            "fast=Gemini 2.5 Flash Image ($0.039). "
+            "Default: pro (or ADS_IMAGE_QUALITY env var)."
+        ),
+    )
+    parser.add_argument(
         "--model", "-m",
         default=None,
-        help="Model name override (e.g. gemini-3.1-flash-image-preview). Defaults to provider's current default.",
+        help="Explicit model ID override (takes precedence over --quality). "
+             "E.g. imagen-4.0-generate-001, gemini-3-pro-image-preview.",
     )
     parser.add_argument(
         "--reference-image", "-i",
@@ -544,9 +630,19 @@ Set ADS_IMAGE_PROVIDER to switch providers: gemini (default), openai, stability,
     provider = args.provider or os.environ.get("ADS_IMAGE_PROVIDER", DEFAULT_PROVIDER)
     api_key = _get_api_key(provider)
 
+    # Resolve model: explicit --model wins, else --quality preset, else env var, else default.
+    # Only applies to gemini provider (the 4 quality presets map to Google models).
+    resolved_model = args.model
+    if not resolved_model and provider == "gemini":
+        quality = args.quality or os.environ.get("ADS_IMAGE_QUALITY", DEFAULT_QUALITY)
+        if quality not in QUALITY_PRESETS:
+            print(f"Error: Unknown quality preset '{quality}'. Valid: {list(QUALITY_PRESETS.keys())}", file=sys.stderr)
+            sys.exit(1)
+        resolved_model = QUALITY_PRESETS[quality]
+
     # Batch mode
     if args.batch:
-        run_batch(args.batch, args.output_dir, provider, args.model, api_key, args.json)
+        run_batch(args.batch, args.output_dir, provider, resolved_model, api_key, args.json)
         return
 
     # Single image mode
@@ -558,7 +654,7 @@ Set ADS_IMAGE_PROVIDER to switch providers: gemini (default), openai, stability,
         output_path = f"ad_{safe_ratio}.png"
 
     try:
-        image_bytes, width, height = generate_image(args.prompt, ratio, provider, args.model, api_key, args.reference_image)
+        image_bytes, width, height = generate_image(args.prompt, ratio, provider, resolved_model, api_key, args.reference_image)
     except Exception as e:
         print(f"Error: {_sanitize_error(e)}", file=sys.stderr)
         sys.exit(1)
@@ -571,7 +667,8 @@ Set ADS_IMAGE_PROVIDER to switch providers: gemini (default), openai, stability,
         "success": True,
         "file": output_path,
         "provider": provider,
-        "model": args.model or f"default ({provider})",
+        "model": resolved_model or f"default ({provider})",
+        "quality": args.quality,
         "width": width,
         "height": height,
         "ratio": ratio,

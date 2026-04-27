@@ -16,10 +16,33 @@ distinct concepts, angles, and formats over volume of similar variants.
 
 ## Process
 
-1. Collect Meta Ads data (Ads Manager export, Events Manager screenshot, EMQ scores)
-2. Read `ads/references/meta-audit.md` for full 50-check audit
-3. Read `ads/references/benchmarks.md` for Meta-specific benchmarks
-4. Read `ads/references/scoring-system.md` for weighted scoring
+### Step 1: Collect Meta Ads Data
+
+Try live API first, fall back to manual exports:
+
+**Live API mode (preferred)**: If both `META_ACCESS_TOKEN` and `META_AD_ACCOUNT_ID` environment variables are set, run the fetch script to pull a fresh snapshot:
+
+```bash
+python ~/.claude/skills/ads/scripts/fetch_meta_ads.py \
+    --output ./meta-snapshot.json \
+    --days 30
+```
+
+This produces `meta-snapshot.json` with campaigns, ad sets, ads, insights (spend/impressions/clicks/conversions/ROAS), creatives, and pixels. All the audit inputs at once.
+
+If the script errors with exit code 2 (auth), stop and tell the user the token is expired or missing `ads_read` scope. Do not silently fall back — ask whether to regenerate the token or proceed with manual data.
+
+**Manual mode (fallback)**: If env vars are unset, ask the user to:
+- Export campaign report CSV from Meta Ads Manager (last 30 days, all columns)
+- Take a screenshot of Events Manager showing Pixel/CAPI status and EMQ scores
+- Drop both files into the current working directory
+
+### Step 2: Analyze
+
+1. Read `ads/references/meta-audit.md` for full 50-check audit
+2. Read `ads/references/benchmarks.md` for Meta-specific benchmarks
+3. Read `ads/references/scoring-system.md` for weighted scoring
+4. If `meta-snapshot.json` exists, parse it directly. Otherwise parse the CSV/screenshot data provided.
 5. Evaluate all applicable checks as PASS, WARNING, or FAIL
 6. Calculate Meta Ads Health Score (0-100)
 7. Generate findings report with action plan

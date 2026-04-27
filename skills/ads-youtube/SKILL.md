@@ -1,7 +1,7 @@
 ---
 name: ads-youtube
 description: "YouTube Ads specific analysis covering campaign types, creative quality, audience targeting, and measurement. Evaluates video ad performance across skippable, non-skippable, bumper, Shorts, Demand Gen, and Connected TV formats. Covers VAC→Demand Gen migration, Shorts creative requirements, and CTV shoppable ads. Use when user says YouTube Ads, video ads, pre-roll, bumper ads, YouTube campaign, Shorts ads, or CTV ads."
-user-invokable: false
+user-invokable: true
 ---
 
 # YouTube Ads Analysis

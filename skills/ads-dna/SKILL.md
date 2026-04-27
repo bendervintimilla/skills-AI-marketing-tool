@@ -178,7 +178,9 @@ Run `/ads create` to generate campaign concepts from this profile.
 ## Visual Designer Integration
 
 The visual-designer agent uses the most relevant screenshot per concept as a style
-reference when generating images via banana. For example, a product-focused concept
+reference image when calling `generate_image.py --reference-image ...`. Reference
+images auto-route to `--quality flash` (Gemini 3.1 Flash Image Preview) since
+Imagen 4 does not accept references. For example, a product-focused concept
 references the product page screenshot, while a brand awareness concept references
 the homepage or about page screenshot.
 

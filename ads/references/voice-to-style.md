@@ -7,8 +7,9 @@
 
 Brand voice scores (1 to 10 scale) from `brand-profile.json` translate directly
 into visual style descriptors for image generation prompts. Each axis maps to
-specific aesthetic attributes that become the [STYLE] component in banana prompts.
-When multiple axes combine, their descriptors merge into a cohesive style string.
+specific aesthetic attributes that become the [STYLE] component in the
+5-component prompt used by `generate_image.py`. When multiple axes combine,
+their descriptors merge into a cohesive style string.
 
 ## Axis Mappings
 
@@ -66,7 +67,7 @@ When multiple axes combine, their descriptors merge into a cohesive style string
 2. For each axis, look up the matching range (Low, Mid, High) in the table above.
 3. Collect one or two descriptors per axis that best fit the brand context.
 4. Combine all selected descriptors into a single [STYLE] string, separated by commas.
-5. Append the [STYLE] string to the banana prompt template before generation.
+5. Append the [STYLE] string to the 5-component prompt before passing it to `generate_image.py`.
 
 ## Example
 

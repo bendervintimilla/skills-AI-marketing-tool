@@ -83,8 +83,11 @@ Additional instructions for `creative-strategist`:
 - For e-commerce businesses, also read `skills/ads-plan/assets/ecommerce-creative.md`
   and select the appropriate creative playbook (Product Launch, Sale/Promotion,
   Seasonal, Retargeting, Brand Awareness)
-- Include banana domain mode recommendations in each Image Generation Brief
-  (Product, Editorial, Cinema, UI/Web, or Portrait)
+- Include recommended `--quality` preset per Image Generation Brief:
+  `pro` (Gemini 3 Pro Image) for hero / key visuals,
+  `high` (Imagen 4 Ultra) for photoreal product packshots,
+  `flash` (Gemini 3.1 Flash Image) when a brand reference image is provided,
+  `fast` (Gemini 2.5 Flash Image) for A/B variants at volume
 
 Wait for `creative-strategist` to **fully complete** before continuing.
 

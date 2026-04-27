@@ -71,7 +71,7 @@ commentary: Validate every asset in the manifest. Be precise about which dimensi
    - LinkedIn: needs 1:1 (1080x1080)
    - TikTok: needs 9:16 (1080x1920) only
 
-7. **Cost tracking**: if banana cost data exists at `~/.banana/costs.json`, read it and include a campaign generation cost summary in format-report.md. Include total cost, cost per asset, and cost by platform.
+7. **Cost tracking**: read the `quality` and `model` fields from each asset in `generation-manifest.json` and compute total generation cost using the pricing table in `~/.claude/skills/ads/references/image-providers.md` (pro $0.134, high $0.06, flash $0.067, fast $0.039 per 1K image). Include total cost, cost per asset, and cost by platform in format-report.md.
 
 8. **Write format-report.md** to the current directory.
 
@@ -122,13 +122,14 @@ commentary: Validate every asset in the manifest. Be precise about which dimensi
 [List prompt adjustment suggestions for any WARNING items]
 
 ## Generation Cost Summary
-*(Included only when ~/.banana/costs.json is available)*
+*(Computed from generation-manifest.json quality field and per-preset pricing)*
 
 | Metric | Value |
 |--------|-------|
 | Total assets generated | [N] |
 | Total cost | $[X.XX] |
 | Average cost per asset | $[X.XX] |
+| Cost by preset | pro: $[X.XX] ([N] imgs), high: $[X.XX] ([N]), flash: $[X.XX] ([N]), fast: $[X.XX] ([N]) |
 | Cost by platform | Meta: $[X.XX], Google: $[X.XX], TikTok: $[X.XX] |
 
 ## Recommendations

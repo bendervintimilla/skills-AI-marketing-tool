@@ -1,7 +1,7 @@
 ---
 name: ads-linkedin
 description: "LinkedIn Ads deep analysis for B2B advertising. Evaluates 27 checks across technical setup, audience targeting, creative quality, lead gen forms, and bidding strategy. Includes Thought Leader Ads, ABM, and predictive audiences. Use when user says LinkedIn Ads, B2B ads, sponsored content, lead gen forms, InMail, or LinkedIn campaign."
-user-invokable: false
+user-invokable: true
 ---
 
 # LinkedIn Ads Deep Analysis

@@ -1,6 +1,6 @@
 ---
 name: ads-photoshoot
-description: "Product photography enhancement for ad creatives using banana-claude image generation. Takes a product image and generates 5 professional photography styles for ad use: Studio, Floating, Ingredient, In Use, and Lifestyle. Requires banana-claude (v1.4.1+) with nanobanana-mcp. Triggers on: product photo, product photography, photoshoot, enhance product image, product shoot, product photos for ads, generate product photos, studio shot, lifestyle photo."
+description: "Product photography enhancement for ad creatives using Google Imagen 4 Ultra (default) / Gemini 3 Pro Image. Takes a product image and generates 5 professional photography styles for ad use: Studio, Floating, Ingredient, In Use, and Lifestyle. Requires GOOGLE_API_KEY and google-genai. Triggers on: product photo, product photography, photoshoot, enhance product image, product shoot, product photos for ads, generate product photos, studio shot, lifestyle photo."
 user-invokable: false
 ---
 
@@ -21,8 +21,17 @@ and 9:16 (TikTok/Reels/Stories).
 
 ## Environment Setup
 
-Requires banana-claude (v1.4.1+) with nanobanana-mcp configured.
-Run `/banana setup` to configure API key and MCP.
+Requires `GOOGLE_API_KEY` environment variable and `google-genai>=1.16.0`
+(installed by the skill's `requirements.txt`).
+
+Get a key at https://aistudio.google.com/app/apikey.
+
+**Recommended quality presets for product photography:**
+- `high` (Imagen 4 Ultra, $0.06/img) — best for photoreal Studio and Floating shots
+- `pro` (Gemini 3 Pro Image, $0.134/img) — best for In Use and Lifestyle scenes
+  where composition reasoning matters
+
+See `~/.claude/skills/ads/references/image-providers.md` for all presets.
 
 ## Process
 
@@ -49,10 +58,14 @@ If found, extract for style injection:
 
 If not found, proceed with standard style templates.
 
-### Step 3: Verify banana-claude
+### Step 3: Verify Google API Key
 
-Verify banana-claude is installed (run `/banana setup` to check). If not installed,
-display setup instructions and exit.
+Check that `GOOGLE_API_KEY` is set. If not, display setup instructions and exit:
+
+```
+export GOOGLE_API_KEY="your-key"
+# Get a key at https://aistudio.google.com/app/apikey
+```
 
 ### Step 4: Construct Prompts per Style
 
@@ -136,20 +149,30 @@ For iterative refinement: if initial generation doesn't match brand expectations
 
 ### Step 5: Generate Images
 
-**Domain mode selection per style:**
-- Use banana **Product** mode for Studio, Floating, and Ingredient styles
-- Use banana **Editorial** mode for In Use and Lifestyle styles
-- Set resolution to 2K (default) for all generations
+**Quality preset per style:**
+- `high` (Imagen 4 Ultra) for **Studio**, **Floating**, **Ingredient** —
+  photoreal product-first composition, clean backgrounds, sharp detail
+- `pro` (Gemini 3 Pro Image) for **In Use**, **Lifestyle** —
+  needs scene reasoning and human-product interaction
 
-**Aspect ratio setup:** Use banana MCP `set_aspect_ratio` before each generation:
-- For 1080x1080: set ratio to 1:1
-- For 1080x1920: set ratio to 9:16
+**Aspect ratio per size:**
+- 1080×1080 → `--ratio 1:1`
+- 1080×1920 → `--ratio 9:16`
 
-For each style x size combination, use `/banana generate` with the constructed
-prompt, selected domain mode, and correct aspect ratio. Save output to
-`./product-photos/[style]/[product-slug]-[style]-[WxH].png`.
+For each style × size combination, invoke the script:
 
-Track results. If a generation fails, retry once with a simplified prompt.
+```bash
+python ~/.claude/skills/ads/scripts/generate_image.py \
+    "<constructed prompt>" \
+    --ratio <1:1 or 9:16> \
+    --quality <high or pro> \
+    --output ./product-photos/<style>/<product-slug>-<style>-<WxH>.png \
+    --json
+```
+
+Parse the JSON output from each call to track width/height and model used.
+If a generation fails with `SAFETY` or `IMAGE_SAFETY`, retry once with a
+simplified prompt (remove brand-specific references and person descriptors).
 
 ### Step 6: Organize and Report
 
@@ -183,7 +206,7 @@ Track results. If a generation fails, retry once with a simplified prompt.
   In Use:     ./product-photos/in-use/ (2 sizes)
   Lifestyle:  ./product-photos/lifestyle/ (2 sizes)
 
-  Cost: see ~/.banana/costs.json for total spend
+  Cost: $[total] ([N] × Imagen 4 Ultra @ $0.06 + [M] × Gemini 3 Pro @ $0.134)
 
   Best for:
   • Meta Feed → Studio (4:5) or Lifestyle (4:5)
@@ -197,9 +220,11 @@ Track results. If a generation fails, retry once with a simplified prompt.
 ## Cost Estimate
 
 Before generating, show:
-- Number of styles selected x 2 sizes = total images
-- Estimated cost based on banana pricing tiers
-- If >$0.50, ask for confirmation
+- Number of styles × 2 sizes = total images
+- Estimated cost using per-preset pricing:
+  - Imagen 4 Ultra (`high`): $0.06/img
+  - Gemini 3 Pro Image (`pro`): $0.134/img
+- If estimated total >$0.50, ask for confirmation
 
 ## Platform Recommendations
 

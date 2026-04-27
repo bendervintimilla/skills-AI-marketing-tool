@@ -14,11 +14,19 @@ Pillow>=11.0.0,<13.0.0            # Image dimension validation
 reportlab>=4.0,<5.0.0             # PDF layout and rendering
 matplotlib>=3.8.0,<4.0.0          # Health score gauge and platform bar charts
 
-# Image generation: banana-claude is the default provider (no pip packages needed).
-# Install banana-claude separately: https://github.com/AgriciDaniel/claude-banana
-# The packages below are only needed if using generate_image.py fallback directly.
+# Image generation: Google Gemini / Imagen 4 via google-genai SDK.
+# Default quality presets: pro (Gemini 3 Pro Image), high (Imagen 4 Ultra),
+# flash (Gemini 3.1 Flash Image), fast (Gemini 2.5 Flash Image).
+google-genai>=1.16.0,<2.0.0       # Gemini 3.x + Imagen 4 family
 
-# google-genai>=1.16.0,<2.0.0     # Gemini (only for generate_image.py fallback)
+# Google Ads API (used by fetch_google_ads.py)
+google-ads>=22.0.0,<25.0.0        # Google Ads API client
+google-auth-oauthlib>=1.2.0,<2.0.0  # OAuth2 refresh token flow (--auth)
+
+# HTML parsing (used by fetch_landing_portfolio.py)
+beautifulsoup4>=4.12.0,<5.0.0     # Landing page structural analysis
+
+# Optional alternative providers (not installed by default):
 # openai>=1.75.0,<2.0.0           # OpenAI gpt-image-1
 # stability-sdk>=0.8.4,<1.0.0     # Stability AI SD 3.5
 # replicate>=1.0.4,<2.0.0         # Replicate / FLUX.1 Pro

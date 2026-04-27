@@ -123,11 +123,12 @@ Used by `copy-writer` agent for tone calibration. Not injected into image prompt
 ### Screenshots (optional, populated by `/ads dna`)
 
 - `homepage`: Desktop screenshot of homepage. **Primary visual style reference** for
-  `visual-designer` agent. When present, generation auto-uses `gemini-3.1-flash-image-preview`
-  (Nano Banana 2) for better brand style-transfer.
+  `visual-designer` agent. When present, `generate_image.py` auto-switches to
+  `gemini-3.1-flash-image-preview` (quality preset `flash`) for multi-reference
+  style-transfer — it accepts up to 14 reference images.
 - `secondary`: Additional pages (pricing, about, product). Supplemental context.
-- **If field absent**: `visual-designer` falls back to text-only generation (`gemini-2.5-flash-image`).
-- **If field present but file missing on disk**: `visual-designer` logs a warning and falls back gracefully.
+- **If field absent**: `visual-designer` uses the brief's declared quality preset (default `pro` — Gemini 3 Pro Image).
+- **If field present but file missing on disk**: `visual-designer` logs a warning and falls back to text-only generation gracefully.
 - Set by `ads-dna` Step 2b. Omitted entirely if screenshot capture failed or `--quick` was used.
 
 ---

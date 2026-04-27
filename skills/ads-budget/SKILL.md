@@ -1,7 +1,7 @@
 ---
 name: ads-budget
-description: "Budget allocation and bidding strategy review across all ad platforms. Evaluates spend distribution, bidding strategy appropriateness, scaling readiness, and identifies campaigns to kill or scale. Uses 70/20/10 rule, 3x Kill Rule, and 20% scaling rule. Use when user says budget allocation, bidding strategy, ad spend, ROAS target, media budget, or scaling."
-user-invokable: false
+description: "Budget allocation and bidding strategy optimization across all ad platforms and brand portfolio. Evaluates spend distribution, recommends per-brand budgets based on audience size and goals, identifies campaigns to kill or scale. Uses 70/20/10 rule and tiered brand prioritization. Use when user says budget, presupuesto, ad spend, cuánto gastar, allocate, or scaling."
+user-invokable: true
 ---
 
 <!-- Updated: 2026-04-13 | v1.5 -->

@@ -1,7 +1,7 @@
 ---
 name: ads-audit
 description: "Full multi-platform paid advertising audit with parallel subagent delegation. Analyzes Google Ads, Meta Ads, LinkedIn Ads, TikTok Ads, and Microsoft Ads accounts. Generates health score per platform and aggregate score. Use when user says audit, full ad check, analyze my ads, account health check, or PPC audit."
-user-invokable: false
+user-invokable: true
 ---
 
 # Full Multi-Platform Ads Audit
