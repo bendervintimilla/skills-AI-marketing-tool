@@ -5,14 +5,14 @@ set -euo pipefail
 # Wraps everything in main() to prevent partial execution on network failure
 #
 # Usage:
-#   curl -fsSL https://github.com/AgriciDaniel/claude-ads/raw/main/install.sh | bash
+#   curl -fsSL https://github.com/bendervintimilla/skills-AI-marketing-tool/raw/main/install.sh | bash
 #   bash install.sh          # pulls from GitHub
 #   bash install.sh --local  # deploys from this directory (development mode)
 
 main() {
     SKILL_DIR="${HOME}/.claude/skills/ads"
     AGENT_DIR="${HOME}/.claude/agents"
-    REPO_URL="https://github.com/AgriciDaniel/claude-ads"
+    REPO_URL="https://github.com/bendervintimilla/skills-AI-marketing-tool"
     LOCAL_MODE=false
 
     # Parse flags
