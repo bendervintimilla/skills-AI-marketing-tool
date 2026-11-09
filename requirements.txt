@@ -17,7 +17,7 @@ matplotlib>=3.8.0,<4.0.0          # Health score gauge and platform bar charts
 # Image generation: Google Gemini / Imagen 4 via google-genai SDK.
 # Default quality presets: pro (Gemini 3 Pro Image), high (Imagen 4 Ultra),
 # flash (Gemini 3.1 Flash Image), fast (Gemini 2.5 Flash Image).
-google-genai>=1.16.0,<2.0.0       # Gemini 3.x + Imagen 4 family
+google-genai>=3.0.0,<4.0.0       # Gemini 3.x + Imagen 4 family
 
 # Google Ads API (used by fetch_google_ads.py)
 google-ads>=22.0.0,<25.0.0        # Google Ads API client
